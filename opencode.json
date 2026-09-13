@@ -1,0 +1,18 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": ["@dodopayments/opencode-plugin"],
+  "skills": {
+    "paths": ["node_modules/@dodopayments/opencode-plugin/skills"]
+  },
+  "mcp": {
+    "dodopayments-api": {
+      "type": "local",
+      "command": ["npx", "-y", "dodopayments-mcp@latest"],
+      "environment": {
+        "DODO_PAYMENTS_API_KEY": "ZGHbVCO_Y0IeXEub.tve5S0MS2xFlzwPmdeuAVvW4dAlCu3NFBeucZ52akL6PWf1U",
+        "DODO_PAYMENTS_ENVIRONMENT": "test_mode"
+      },
+      "enabled": true
+    }
+  }
+}
