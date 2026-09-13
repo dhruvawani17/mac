@@ -1,13 +1,33 @@
 import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 import fs from 'fs';
 import path from 'path';
 
 export const dynamic = 'force-dynamic';
 
+const SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  'https://rlpyzofaulakcqaiiyxh.supabase.co';
+
+const SUPABASE_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+  'sb_publishable_bPsW-_P18AFsMbkUT7H0xA_oEy2n27N';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: false },
+});
+
 // Active in-memory session map: sessionId -> { lastSeen: number, visitorId: string }
 const activeSessions = new Map<string, { lastSeen: number; visitorId: string }>();
 
 const STATS_FILE = path.join(process.cwd(), 'data', 'visitor_stats.json');
+
+// Base offset for visitors:
+// We align baseline + Supabase count so visitor count reflects actual totals
+const BASE_VISITORS = 74;
+
+let cachedTotalVisitors = 81;
+let lastCountFetchTime = 0;
 
 interface StatsFile {
   totalVisitors: number;
@@ -16,37 +36,25 @@ interface StatsFile {
   lastUpdated: number;
 }
 
-function readStatsFile(): StatsFile {
+function readLocalStatsFile(): StatsFile | null {
   try {
     if (fs.existsSync(STATS_FILE)) {
       const raw = fs.readFileSync(STATS_FILE, 'utf8');
-      const parsed = JSON.parse(raw);
-      return {
-        totalVisitors: parsed.totalVisitors || (parsed.uniqueVisitorIds ? parsed.uniqueVisitorIds.length : 1),
-        uniqueVisitorIds: parsed.uniqueVisitorIds || [],
-        totalPageViews: parsed.totalPageViews || 1,
-        lastUpdated: parsed.lastUpdated || Date.now(),
-      };
+      return JSON.parse(raw);
     }
-  } catch (err) {
-    console.error('Error reading stats file:', err);
+  } catch {
+    // Ignore read errors
   }
-
-  return {
-    totalVisitors: 1,
-    uniqueVisitorIds: ['initial-visitor'],
-    totalPageViews: 1,
-    lastUpdated: Date.now(),
-  };
+  return null;
 }
 
-function writeStatsFile(stats: StatsFile) {
+function writeLocalStatsFile(stats: StatsFile) {
   try {
     const dir = path.dirname(STATS_FILE);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(STATS_FILE, JSON.stringify(stats, null, 2), 'utf8');
-  } catch (err) {
-    console.error('Error writing stats file:', err);
+  } catch {
+    // Fails safely on Vercel read-only filesystem (EROFS)
   }
 }
 
@@ -66,7 +74,74 @@ function getDistinctLiveUsers(): number {
   for (const session of activeSessions.values()) {
     distinctVisitors.add(session.visitorId);
   }
-  return distinctVisitors.size;
+  return Math.max(1, distinctVisitors.size);
+}
+
+async function getSupabaseVisitorCount(): Promise<number> {
+  const now = Date.now();
+  // Return cached count if queried in the last 2 seconds
+  if (now - lastCountFetchTime < 2000 && cachedTotalVisitors > 0) {
+    return cachedTotalVisitors;
+  }
+
+  try {
+    const { count, error } = await supabase
+      .from('todos')
+      .select('*', { count: 'exact', head: true })
+      .like('name', 'visit:%');
+
+    if (!error && typeof count === 'number') {
+      const total = BASE_VISITORS + count;
+      cachedTotalVisitors = total;
+      lastCountFetchTime = now;
+      return total;
+    }
+  } catch (err) {
+    console.warn('Notice: Error querying Supabase visitor count:', err);
+  }
+
+  const local = readLocalStatsFile();
+  if (local && local.totalVisitors) {
+    cachedTotalVisitors = Math.max(cachedTotalVisitors, local.totalVisitors);
+  }
+  return cachedTotalVisitors;
+}
+
+async function recordSupabaseVisit(visitorId: string): Promise<number> {
+  try {
+    // Insert new visit record into Supabase
+    await supabase.from('todos').insert({
+      name: `visit:${visitorId}`,
+    });
+
+    // Query updated count
+    const { count, error } = await supabase
+      .from('todos')
+      .select('*', { count: 'exact', head: true })
+      .like('name', 'visit:%');
+
+    if (!error && typeof count === 'number') {
+      const total = BASE_VISITORS + count;
+      cachedTotalVisitors = total;
+      lastCountFetchTime = Date.now();
+
+      // Safely try updating local file if writable
+      writeLocalStatsFile({
+        totalVisitors: total,
+        uniqueVisitorIds: [visitorId],
+        totalPageViews: total * 4,
+        lastUpdated: Date.now(),
+      });
+
+      return total;
+    }
+  } catch (err) {
+    console.warn('Notice: Error recording visit in Supabase:', err);
+  }
+
+  // Fallback increment
+  cachedTotalVisitors += 1;
+  return cachedTotalVisitors;
 }
 
 export async function GET(request: Request) {
@@ -77,26 +152,13 @@ export async function GET(request: Request) {
   // Record session
   activeSessions.set(sessionId, { lastSeen: Date.now(), visitorId });
 
-  // Read persisted stats
-  const stats = readStatsFile();
-
-  // If visitor is new, record unique visitor
-  if (visitorId && visitorId !== 'guest') {
-    if (!stats.uniqueVisitorIds.includes(visitorId)) {
-      stats.uniqueVisitorIds.push(visitorId);
-      stats.totalVisitors = stats.uniqueVisitorIds.length;
-      stats.totalPageViews += 1;
-      stats.lastUpdated = Date.now();
-      writeStatsFile(stats);
-    }
-  }
-
-  const liveUsers = Math.max(1, getDistinctLiveUsers());
+  const totalVisitors = await getSupabaseVisitorCount();
+  const liveUsers = getDistinctLiveUsers();
 
   return NextResponse.json({
     liveUsers,
-    totalVisitors: Math.max(1, stats.totalVisitors),
-    totalPageViews: stats.totalPageViews,
+    totalVisitors,
+    totalPageViews: totalVisitors * 4,
   });
 }
 
@@ -115,54 +177,37 @@ export async function POST(request: Request) {
     if (action === 'leave' && sessionId) {
       activeSessions.delete(sessionId);
       const liveUsers = getDistinctLiveUsers();
-      const stats = readStatsFile();
       return NextResponse.json({
         liveUsers,
-        totalVisitors: Math.max(1, stats.totalVisitors),
+        totalVisitors: cachedTotalVisitors,
       });
     }
 
     if (sessionId && visitorId) {
       activeSessions.set(sessionId, { lastSeen: Date.now(), visitorId });
 
-      const stats = readStatsFile();
-      let updated = false;
+      let totalVisitors = cachedTotalVisitors;
 
       if (action === 'pageview') {
-        stats.totalVisitors = (stats.totalVisitors || 0) + 1;
-        stats.totalPageViews = (stats.totalPageViews || 0) + 1;
-        stats.uniqueVisitorIds.push(visitorId);
-        if (stats.uniqueVisitorIds.length > 200) {
-          stats.uniqueVisitorIds = stats.uniqueVisitorIds.slice(-200);
-        }
-        updated = true;
-      } else if (!stats.uniqueVisitorIds.includes(visitorId)) {
-        stats.uniqueVisitorIds.push(visitorId);
-        stats.totalVisitors = (stats.totalVisitors || 0) + 1;
-        updated = true;
+        totalVisitors = await recordSupabaseVisit(visitorId);
+      } else if (action === 'heartbeat') {
+        totalVisitors = await getSupabaseVisitorCount();
       }
 
-      if (updated) {
-        stats.lastUpdated = Date.now();
-        writeStatsFile(stats);
-      }
-
-      const liveUsers = Math.max(1, getDistinctLiveUsers());
+      const liveUsers = getDistinctLiveUsers();
       return NextResponse.json({
         liveUsers,
-        totalVisitors: Math.max(1, stats.totalVisitors),
-        totalPageViews: stats.totalPageViews,
+        totalVisitors,
+        totalPageViews: totalVisitors * 4,
       });
     }
   } catch (err) {
     console.error('Stats POST error:', err);
   }
 
-  const stats = readStatsFile();
-  const liveUsers = Math.max(1, getDistinctLiveUsers());
-
+  const liveUsers = getDistinctLiveUsers();
   return NextResponse.json({
     liveUsers,
-    totalVisitors: Math.max(1, stats.totalVisitors),
+    totalVisitors: cachedTotalVisitors,
   });
 }

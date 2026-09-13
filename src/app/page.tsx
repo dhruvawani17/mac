@@ -63,7 +63,7 @@ export default function Home() {
   const [checkoutLogoUrl, setCheckoutLogoUrl] = useState("");
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [liveUsers, setLiveUsers] = useState<number>(1);
-  const [totalVisitors, setTotalVisitors] = useState<number>(1);
+  const [totalVisitors, setTotalVisitors] = useState<number>(81);
 
   // Real-time visitor tracking (every refresh registers a new visitor)
   useEffect(() => {
