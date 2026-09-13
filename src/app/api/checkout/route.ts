@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server';
 import DodoPayments from 'dodopayments';
 
-const client = new DodoPayments({
-  bearerToken: process.env.DODO_PAYMENTS_API_KEY!,
-  environment: (process.env.DODO_PAYMENTS_ENVIRONMENT as 'test_mode' | 'live_mode') || 'test_mode',
-});
+export const dynamic = 'force-dynamic';
+
+function getDodoClient() {
+  const apiKey = process.env.DODO_PAYMENTS_API_KEY;
+  if (!apiKey) return null;
+  return new DodoPayments({
+    bearerToken: apiKey,
+    environment: (process.env.DODO_PAYMENTS_ENVIRONMENT as 'test_mode' | 'live_mode') || 'test_mode',
+  });
+}
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -32,6 +38,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
 
+  const client = getDodoClient();
+  if (!client) {
+    return NextResponse.json(
+      { error: 'Payment gateway configuration is missing (DODO_PAYMENTS_API_KEY).' },
+      { status: 500 }
+    );
+  }
+
   try {
     // Create a product dynamically with the exact spot price
     const product = await client.products.create({
@@ -43,6 +57,8 @@ export async function POST(request: Request) {
       },
       tax_category: 'digital_products',
     });
+
+    const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
     // Create checkout session with the newly created product
     const session = await client.checkoutSessions.create({
@@ -61,7 +77,7 @@ export async function POST(request: Request) {
         website_url: websiteUrl || '',
         logo_url: logoUrl || '',
       },
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/success`,
+      return_url: `${origin}/checkout/success`,
     });
 
     return NextResponse.json({

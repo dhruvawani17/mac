@@ -4,6 +4,8 @@ import { cookies } from 'next/headers';
 import fs from 'fs';
 import path from 'path';
 
+export const dynamic = 'force-dynamic';
+
 const CLAIMS_FILE = path.join(process.cwd(), 'data', 'claimed_spots.json');
 
 interface ClaimRecord {
