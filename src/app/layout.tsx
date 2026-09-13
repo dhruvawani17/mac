@@ -25,6 +25,13 @@ export const metadata: Metadata = {
     siteName: "Brand My Mac",
     locale: "en",
   },
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
   other: {
     "theme-color": "#ffffff",
     "color-scheme": "light",

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Outer squircle container -->
+  <rect width="64" height="64" rx="14" fill="#111113"/>
+  <rect x="0.5" y="0.5" width="63" height="63" rx="13.5" stroke="#ffffff" stroke-opacity="0.12"/>
+  
+  <!-- MacBook Display / Lid -->
+  <rect x="11" y="14" width="42" height="28" rx="3.5" fill="#EAE5DC"/>
+  <rect x="11.5" y="14.5" width="41" height="27" rx="3" stroke="#ffffff" stroke-opacity="0.4"/>
+  
+  <!-- Center Apple logo silhouette -->
+  <path d="M32 23.8c-1.1 0-2.1 0.7-2.6 0.7s-1.4-0.7-2.3-0.7c-1.6 0-3 1-3.7 2.3-1.6 2.7-0.4 6.7 1.1 8.9 0.8 1.1 1.7 2.2 2.8 2.2 1.1 0 1.5-0.7 2.7-0.7s1.6 0.7 2.7 0.7c1.2 0 2-1 2.8-2.2 0.8-1.2 1.2-2.3 1.3-2.5-0.2-0.1-2.4-0.9-2.4-3.5 0-2.2 1.8-3.2 2-3.3-1-1.5-2.7-1.8-3.4-1.9zm-0.6-1c0.6-0.8 1-1.8 0.9-2.8-1 0.1-2 0.6-2.6 1.4-0.6 0.6-1 1.7-0.9 2.7 1.1 0.1 2-0.5 2.6-1.3z" fill="#111113" opacity="0.82"/>
+  
+  <!-- MacBook Base / Wedge -->
+  <path d="M7 43.5C7 42.67 7.67 42 8.5 42H55.5C56.33 42 57 42.67 57 43.5V44C57 45.1 56.1 46 55 46H9C7.9 46 7 45.1 7 44V43.5Z" fill="#D3CCC2"/>
+  <!-- Base notch opening thumb groove -->
+  <path d="M29 42H35V43C35 43.55 34.55 44 34 44H30C29.45 44 29 43.55 29 43V42Z" fill="#111113" opacity="0.3"/>
+  
+  <!-- Sponsor stickers on lid -->
+  <!-- Top Left Sticker: Electric Blue -->
+  <rect x="14" y="17" width="9" height="6" rx="1.5" fill="#0071E3"/>
+  <rect x="15.5" y="19" width="6" height="2" rx="0.75" fill="#FFFFFF" opacity="0.9"/>
+  
+  <!-- Top Right Sticker: Apple Green -->
+  <rect x="41" y="17" width="9" height="6" rx="1.5" fill="#34C759"/>
+  <circle cx="45.5" cy="20" r="1.5" fill="#FFFFFF" opacity="0.9"/>
+  
+  <!-- Bottom Right Sticker: Vibrant Coral / Orange -->
+  <rect x="42" y="32" width="8" height="5" rx="1.2" fill="#FF9500"/>
+</svg>
