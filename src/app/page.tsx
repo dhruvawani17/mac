@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { MacBookSection } from "@/components/MacBookDisplay/MacBookSection";
 import { createClient } from "@/utils/supabase/client";
+import CountUp from "@/components/CountUp";
 
 interface ClaimedSpot {
   id: number;
@@ -287,7 +288,14 @@ export default function Home() {
               <span className="font-semibold text-ink">{liveUsers} live</span>
               <span className="text-ink-2/30">·</span>
               <span>
-                {totalVisitors.toLocaleString()} {totalVisitors === 1 ? "visitor" : "visitors"}
+                <CountUp
+                  from={0}
+                  to={totalVisitors}
+                  separator=","
+                  duration={2}
+                  className="tabular-nums"
+                />{" "}
+                {totalVisitors === 1 ? "visitor" : "visitors"}
               </span>
             </div>
             <a
@@ -314,7 +322,15 @@ export default function Home() {
             </span>
             <span className="text-ink-2/30">·</span>
             <span>
-              <strong className="font-bold text-ink">{totalVisitors.toLocaleString()}</strong>{" "}
+              <strong className="font-bold text-ink">
+                <CountUp
+                  from={0}
+                  to={totalVisitors}
+                  separator=","
+                  duration={2}
+                  className="tabular-nums"
+                />
+              </strong>{" "}
               {totalVisitors === 1 ? "total visitor" : "total visitors"}
             </span>
           </div>
