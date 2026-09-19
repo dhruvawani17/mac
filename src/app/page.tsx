@@ -748,7 +748,7 @@ export default function Home() {
               <p className="text-sm text-ink-2 leading-relaxed mb-3">
                 Building things, shipping projects. This is my MacBook — brands on the lid, logo in hand.
                 Questions, or want a spot?{" "}
-                <a href="mailto:hello@brandmymacbook.com" className="text-blue hover:underline">
+                <a href="mailto:wani.dhruva.17@gmail.com" className="text-blue hover:underline">
                   email me
                 </a>
                 .

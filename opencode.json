@@ -9,8 +9,8 @@
       "type": "local",
       "command": ["npx", "-y", "dodopayments-mcp@latest"],
       "environment": {
-        "DODO_PAYMENTS_API_KEY": "ZGHbVCO_Y0IeXEub.tve5S0MS2xFlzwPmdeuAVvW4dAlCu3NFBeucZ52akL6PWf1U",
-        "DODO_PAYMENTS_ENVIRONMENT": "test_mode"
+        "DODO_PAYMENTS_API_KEY": "YOUR_DODO_PAYMENTS_API_KEY",
+        "DODO_PAYMENTS_ENVIRONMENT": "live_mode"
       },
       "enabled": true
     }
